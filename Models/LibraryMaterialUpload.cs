@@ -1,4 +1,6 @@
-﻿namespace ClassroomAPI.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ClassroomAPI.Models
 {
     public class LibraryMaterialUpload
     {
@@ -8,5 +10,8 @@
         public string UploaderId { get; set; } = string.Empty;
         public string AcceptedOrRejected { get; set; } = string.Empty;
         public ApplicationUser? Uploader { get; set; }
+
+        [NotMapped]
+        public double similarrityScore { get; set; }
     }
 }

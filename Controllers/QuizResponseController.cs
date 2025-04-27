@@ -214,7 +214,7 @@ namespace ClassroomAPI.Controllers
                 if (option == null) return BadRequest("Option not found!");
 
                 if (option.IsCorrect)
-                    finalScore++;
+                    finalScore += question.Points;
 
                 var finalAnswer = new Answer
                 {

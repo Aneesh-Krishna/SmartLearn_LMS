@@ -264,6 +264,116 @@ namespace ClassroomAPI.Controllers
             return Ok("Material has been rejected!");
         }
 
+        //Endpoint for updating the downloads history
+        [HttpPost("{libraryMaterialId}/downloadLibraryMaterialId")]
+        public async Task<IActionResult> DownloadLibraryMaterial(Guid libraryMaterialId)
+        {
+            var userId = GetCurrentUserID();
+            if (userId == null) return Unauthorized("Please login");
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound("User not found!");
+
+            var libraryMaterial = await _context.LibraryMaterials.FirstOrDefaultAsync(lm => lm.LibraryMaterialUploadId == libraryMaterialId);
+            if (libraryMaterial == null)
+                return NotFound("No such library-material found!");
+
+            var libraryDownloadHistory = new LibraryDownloadHistory
+            {
+                LibraryDownloadHistoryId = Guid.NewGuid(),
+                LibraryMaterialId = libraryMaterialId,
+                LibraryMaterial = libraryMaterial,
+                DownloaderId = userId,
+                DownloaderUser = user,
+                DownloadedAt = DateTime.UtcNow
+            };
+
+            _context.LibraryDownloadHistory.Add(libraryDownloadHistory);
+            await _context.SaveChangesAsync();
+
+            return Ok("Download history saved!");
+        }
+
+        [HttpGet("recommendations")]
+        public async Task<ActionResult<List<LibraryMaterialUpload>>> GetRecommendations()
+        {
+            try
+            {
+                // Get current user ID from token
+                var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(currentUserId))
+                {
+                    return Unauthorized();
+                }
+
+                // Step 1: Get user's download history
+                var userDownloads = await _context.LibraryDownloadHistory
+                    .Where(dh => dh.DownloaderId == currentUserId)
+                    .ToListAsync();
+
+                if (!userDownloads.Any())
+                {
+                    // If user has no downloads, return most popular materials
+                    var popularMaterials = await _context.LibraryMaterials
+                        .Where(m => m.AcceptedOrRejected == "Accepted")
+                        .OrderByDescending(m => _context.LibraryDownloadHistory.Count(dh => dh.LibraryMaterialId == m.LibraryMaterialUploadId))
+                        .Take(5)
+                        .ToListAsync();
+
+                    return Ok(new { values = popularMaterials });
+                }
+
+                // Step 2: Get the IDs of materials downloaded by user
+                var downloadedMaterialIds = userDownloads.Select(d => d.LibraryMaterialId).ToList();
+
+                // Step 3: Find other users who downloaded the same materials
+                var similarUserIds = await _context.LibraryDownloadHistory
+                    .Where(dh => downloadedMaterialIds.Contains(dh.LibraryMaterialId) && dh.DownloaderId != currentUserId)
+                    .Select(dh => dh.DownloaderId)
+                    .Distinct()
+                    .ToListAsync();
+
+                // Step 4: Find materials downloaded by similar users but not by current user
+                var recommendationIds = await _context.LibraryDownloadHistory
+                    .Where(dh => similarUserIds.Contains(dh.DownloaderId) && !downloadedMaterialIds.Contains(dh.LibraryMaterialId))
+                    .GroupBy(dh => dh.LibraryMaterialId)
+                    .Select(g => new { MaterialId = g.Key, Count = g.Count() })
+                    .OrderByDescending(x => x.Count)
+                    .Take(10)
+                    .Select(x => x.MaterialId)
+                    .ToListAsync();
+
+                // Step 5: Get actual material details
+                var recommendations = await _context.LibraryMaterials
+                    .Where(m => recommendationIds.Contains(m.LibraryMaterialUploadId) && m.AcceptedOrRejected == "Accepted")
+                    .ToListAsync();
+
+                // Calculate similarity scores (simple version - based on download count)
+                var totalSimilarUserDownloads = await _context.LibraryDownloadHistory
+                    .Where(dh => similarUserIds.Contains(dh.DownloaderId))
+                    .CountAsync();
+
+                var recommendationsWithScores = recommendations.Select(r => {
+                    var downloadsCount = _context.LibraryDownloadHistory
+                        .Count(dh => dh.LibraryMaterialId == r.LibraryMaterialUploadId && similarUserIds.Contains(dh.DownloaderId));
+
+                    // Normalize to 0-1 scale
+                    var similarityScore = totalSimilarUserDownloads > 0 ? (double)downloadsCount / totalSimilarUserDownloads : 0;
+
+                    // Add score property
+                    //r.SimilarityScore = similarityScore;
+
+                    return r;
+                }).ToList();
+
+                return Ok(new { values = recommendationsWithScores });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
         //Method for uploading the material
         public async Task<IActionResult> UploadMaterial(IFormFile file)
         {

@@ -68,6 +68,7 @@ namespace ClassroomAPI.Controllers
                 return Unauthorized("You're not authorized!");
 
             await _reportService.GenerateReport(quizId);
+            await _reportService.GenerateAnalysisReport(quizId);
             return Ok("Report generated and sent successfully!");
         }
     }

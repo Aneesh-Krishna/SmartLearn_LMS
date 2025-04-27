@@ -25,8 +25,8 @@ namespace ClassroomAPI.Data
         public DbSet<Report> Reports { get; set; }
         public DbSet<Participant> Participants { get; set; }
         public DbSet<Meeting> Meetings { get; set; }
-
         public DbSet<LibraryMaterialUpload> LibraryMaterials { get; set; }
+        public DbSet<LibraryDownloadHistory> LibraryDownloadHistory { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -158,6 +158,17 @@ namespace ClassroomAPI.Data
                 .WithMany(u => u.LibraryMaterialsUploader)
                 .HasForeignKey(lm => lm.UploaderId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<LibraryDownloadHistory>()
+                .HasOne(ld => ld.DownloaderUser)
+                .WithMany(u => u.LibraryMaterialsDownloader)
+                .HasForeignKey(ld => ld.DownloaderId)
+                .OnDelete(DeleteBehavior.NoAction);
+            builder.Entity<LibraryDownloadHistory>()
+                .HasOne(ld => ld.LibraryMaterial)
+                .WithMany()
+                .HasForeignKey(ld => ld.LibraryMaterialId)
+                .OnDelete(DeleteBehavior.NoAction);
         }
     }
 }

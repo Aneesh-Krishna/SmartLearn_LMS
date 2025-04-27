@@ -280,6 +280,31 @@ namespace ClassroomAPI.Migrations
                     b.ToTable("CourseMembers");
                 });
 
+            modelBuilder.Entity("ClassroomAPI.Models.LibraryDownloadHistory", b =>
+                {
+                    b.Property<Guid>("LibraryDownloadHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("DownloadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DownloaderId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("LibraryMaterialId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("LibraryDownloadHistoryId");
+
+                    b.HasIndex("DownloaderId");
+
+                    b.HasIndex("LibraryMaterialId");
+
+                    b.ToTable("LibraryDownloadHistory");
+                });
+
             modelBuilder.Entity("ClassroomAPI.Models.LibraryMaterialUpload", b =>
                 {
                     b.Property<Guid>("LibraryMaterialUploadId")
@@ -757,6 +782,25 @@ namespace ClassroomAPI.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ClassroomAPI.Models.LibraryDownloadHistory", b =>
+                {
+                    b.HasOne("ClassroomAPI.Models.ApplicationUser", "DownloaderUser")
+                        .WithMany("LibraryMaterialsDownloader")
+                        .HasForeignKey("DownloaderId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("ClassroomAPI.Models.LibraryMaterialUpload", "LibraryMaterial")
+                        .WithMany()
+                        .HasForeignKey("LibraryMaterialId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("DownloaderUser");
+
+                    b.Navigation("LibraryMaterial");
+                });
+
             modelBuilder.Entity("ClassroomAPI.Models.LibraryMaterialUpload", b =>
                 {
                     b.HasOne("ClassroomAPI.Models.ApplicationUser", "Uploader")
@@ -932,6 +976,8 @@ namespace ClassroomAPI.Migrations
                     b.Navigation("CourseAdmin");
 
                     b.Navigation("CourseMemberships");
+
+                    b.Navigation("LibraryMaterialsDownloader");
 
                     b.Navigation("LibraryMaterialsUploader");
 
