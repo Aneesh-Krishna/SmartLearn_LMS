@@ -10,8 +10,36 @@ namespace ClassroomAPI.Models
         public string UploaderId { get; set; } = string.Empty;
         public string AcceptedOrRejected { get; set; } = string.Empty;
         public ApplicationUser? Uploader { get; set; }
+        public Categories Category { get; set; }
 
         [NotMapped]
-        public double similarrityScore { get; set; }
+        public double similarityScore { get; set; }
+
+    }
+
+    public enum Categories
+    {
+        Science,
+        Mathematics,
+        Commerce,
+        Arts,
+        Fantasy,
+        Thriller,
+        Crime,
+        Suspense,
+        Fiction,
+        Kids,
+        Biography,
+        Business,
+        Health,
+        Cooking,
+        Horror,
+        Romance,
+        Social_Science,
+        Travel,
+        Sports,
+        Agriculture,
+        Self_Help,
+        Unknown
     }
 }

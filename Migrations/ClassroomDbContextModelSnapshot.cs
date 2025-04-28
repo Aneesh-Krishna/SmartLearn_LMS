@@ -315,6 +315,9 @@ namespace ClassroomAPI.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("Category")
+                        .HasColumnType("int");
+
                     b.Property<string>("LibraryMaterialUploadName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
